@@ -5,3 +5,5 @@
     "trailingComma": "es5",
     "semi": true
 }
+
+// this is used to follow prettier standard for all files in the project
