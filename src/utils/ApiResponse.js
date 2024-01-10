@@ -11,4 +11,4 @@ class ApiResponse{
 // Successful responses (200 – 299)
 // Redirection messages (300 – 399)
 // Client error responses (400 – 499)
-// Server error responses (500 – 599)
+// Server error responses (500 – 599)const response = new constructor(200, { name: "John", age: 30 }, "User created successfully");
