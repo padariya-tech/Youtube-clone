@@ -89,18 +89,42 @@ const getChannelStats = asyncHandler(async (req, res) => {
             }
         },
         {
-            $addFields: {
-                totalLikes: {
-                    $size: "$totalLikes"
-                }
+            // find total comments for each video
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "video",
+                as: "totalComments"
             }
         },
         {
+            $addFields: {
+                totalLikes: {
+                    $size: "$totalLikes"
+                },
+                totalComments: {
+                    $size: "$totalComments"
+                }
+            }
+        },
+        
+        {
+            
             $project: {
                 title: 1,
+                thumbnail: 1,
                 views: 1,
-                totalLikes: 1
-            }
+                totalLikes: 1,
+                totalComments: 1,
+                formattedCreatedAt: {
+                  $dateToString: {
+                    date: "$createdAt",
+                    format: "%Y-%m-%d", // Use %m for numeric month
+                    timezone: "UTC",
+                  },
+                },
+              }
+              
         },
         {
             $sort: {
