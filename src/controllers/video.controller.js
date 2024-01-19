@@ -111,7 +111,11 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(400,"video id is required")
     }
 
-    const video = await Video.findById(videoId)
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        { $inc: { views: 1 } }, // Increment viewCount by 1
+        { new: true } // Return the updated document
+    );
     // const delVideo = await Video.findById(videoId)
    
     
