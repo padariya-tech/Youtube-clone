@@ -103,15 +103,65 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
-    const likes = await Like.find({likedBy:req.user._id})
-    // console.log(likes);
-    if(!likes)
-    {
-        throw new ApiError(400,"Error while fetching liked videos")
-    }
-    const likevideo = likes.map((like) => like.video).filter((video) => video!==null && video !== undefined)
-    return res.status(200).json(new ApiResponse(200,likevideo,"Liked videos fetched successfully"))
-})
+    // const likes = await Like.find({likedBy:req.user._id})
+    // // console.log(likes);
+    // if(!likes)
+    // {
+    //     throw new ApiError(400,"Error while fetching liked videos")
+    // }
+    // const likevideo = likes.map((like) => like.video).filter((video) => video!==null && video !== undefined)
+    // return res.status(200).json(new ApiResponse(200,likevideo,"Liked videos fetched successfully"))
+    const likedVideo = await Like.aggregate([
+        {
+          $match: {
+            $and: [
+              {
+                video: { $exists: true },
+              },
+              {
+                likedBy: new mongoose.Types.ObjectId(req.user?._id),
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: "videos",
+            localField: "video",
+            foreignField: "_id",
+            as: "likedVideo",
+            pipeline: [
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "owner",
+                  foreignField: "_id",
+                  as: "owner",
+                  pipeline: [
+                    {
+                      $project: {
+                        userName: 1,
+                        fullName: 1,
+                        avatar: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  owner: {
+                    $first: "$owner",
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ]);
+    
+      res.status(200).json(new ApiResponse(200, likedVideo, "get liked video"));
+    });
 
 export {
     toggleCommentLike,

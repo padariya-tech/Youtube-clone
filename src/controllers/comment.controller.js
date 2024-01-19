@@ -12,15 +12,81 @@ const getVideoComments = asyncHandler(async (req, res) => {
     {
         throw new ApiError(400,"video id is required")
     }
-    const comments = await Comment.find({video:videoId}).limit(limit).skip(limit * (page - 1))
-    if(!comments)
-    {
-        throw new ApiError(404,"No comments found")
-    }
-    return res.status(200).json(new ApiResponse(200,comments,"Comments fetched successfully"))
+    // const comments = await Comment.find({video:videoId}).limit(limit).skip(limit * (page - 1))
+    // if(!comments)
+    // {
+    //     throw new ApiError(404,"No comments found")
+    // }
+    // return res.status(200).json(new ApiResponse(200,comments,"Comments fetched successfully"))
 
+    const comments = await Comment.aggregate([
+        {
+            $match:{
+                video: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup:{
+                from:"users",
+                localField:"owner",
+                foreignField:"_id",
+                as:"owner",
+                pipeline:[
+                    {
+                        $project:{
+                            username:1,
+                            createdAt:1,
+                            avatar:1,
+                        },
+                    }
+                ]
+            },
+        },
+        {
+            $addFields:{
+                owner:{
+                    $first:"$owner",
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "videoId",
+                as: "likes"
+            }
+        },
+        {
+            $addFields: {
+                likeCount: { $size: "$likes" }
+            }
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "videoId",
+                as: "comments"
+            }
+        },
+        {
+            $addFields: {
+                commentCount: { $size: "$comments" }
+            }
+        }
+    ])
+
+const options = {
+    page: page,
+    limit: limit
+}
+if(!comments)
+{
+    throw new ApiError(404,"No comments found")
+}
+return res.status(200).json(new ApiResponse(200,comments,options,"Comments fetched successfully"))
 })
-
 const addComment = asyncHandler(async (req, res) => {
     // TODO: add a comment to a video
     const {content} = req.body;
